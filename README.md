@@ -8,3 +8,15 @@ This project is a lightweight offline NEET mock test interface built using HTML 
 • Flexible question navigation
 • Attempt questions in any order
 • Simple and responsive interface for self-practice
+### How to Use
+
+1. Download the HTML file from this repository.
+
+2. Open the file in any web browser.
+
+3. Paste your NEET questions and answer key in the same format as the example provided inside the file.
+
+4. Start practicing your mock test completely offline.
+
+### Example Format
+
