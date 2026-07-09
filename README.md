@@ -20,4 +20,4 @@ This project is a lightweight offline NEET mock test interface built using HTML 
 
 ### Example Format
 <img width="720" height="1340" alt="15109" src="https://github.com/user-attachments/assets/8742aca9-0c20-48ea-9ba4-84b0dadb1d02" />
-<img width="720" height="1604" alt="15107" src="https://github.com/user-attachments/assets/7053ae81-d1d6-4fa7-8f65-e1ebade952ba" />
+<img width="720" height="1387" alt="15108" src="https://github.com/user-attachments/assets/b864ec13-ca91-42ae-b54c-f1b7c6761133" />
