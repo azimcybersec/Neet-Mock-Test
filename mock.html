@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET/NTA Mock Test Simulator</title>
+    <style>
+        * { box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { margin: 0; padding: 0; background-color: #fff; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Screens */
+        #setup-screen { padding: 40px; max-width: 800px; margin: 40px auto; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; width: 95%; height: 90vh; display: flex; flex-direction: column; }
+        #result-screen { padding: 40px; max-width: 800px; margin: 40px auto; background: white; border: 1px solid #ddd; border-radius: 4px; width: 95%; display: none; text-align: center; }
+        #test-screen { display: none; height: 100vh; width: 100%; flex-direction: row; }
+
+        /* Setup Box */
+        textarea { flex-grow: 1; width: 100%; padding: 15px; font-family: monospace; font-size: 14px; border: 1px solid #ccc; margin-bottom: 20px; resize: none; white-space: pre; }
+        .start-btn, .restart-btn { background: #5cb85c; color: white; border: none; padding: 15px 30px; font-size: 16px; cursor: pointer; font-weight: bold; }
+
+        /* Layout */
+        .left-panel { width: 75%; background-color: white; display: flex; flex-direction: column; border-right: 1px solid #ccc; height: 100%; }
+        .right-panel { width: 25%; background-color: #e9ecef; display: flex; flex-direction: column; height: 100%; overflow-y: auto; border-left: 2px solid #ccc;}
+
+        /* Header (Left Panel) */
+        .header-top { display: flex; border-bottom: 2px solid #ddd; align-items: center; justify-content: space-between; padding: 10px 20px; background: #fff;}
+        .candidate-info { display: flex; align-items: center; gap: 15px; }
+        .profile-pic { width: 70px; height: 80px; border: 1px solid #999; background: #555 url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>') no-repeat center; background-size: 80%; }
+        .info-text p { margin: 3px 0; font-size: 14px; color: #333; }
+        
+        .timer-container { text-align: right; font-size: 14px; color: #555; }
+        .timer-bubble { background-color: #007bff; color: white; padding: 3px 12px; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; margin-top: 5px; }
+
+        /* Question Area */
+        .question-area { padding: 20px 30px; flex-grow: 1; overflow-y: auto; }
+        .question-header { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 20px; align-items: center; }
+        .question-header h2 { margin: 0; font-size: 22px; color: #333; font-weight: bold; }
+        .arrow-down { background: #007bff; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; justify-content: center; align-items: center; font-weight: bold; cursor: pointer; }
+        
+        .question-text { font-size: 15px; margin-bottom: 30px; line-height: 1.6; color: #000; white-space: pre-wrap;}
+        
+        .options-grid { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; font-size: 15px; }
+        .option-item { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+        .option-item input { margin-top: 5px; cursor: pointer; }
+        .option-text { white-space: pre-wrap; line-height: 1.4; }
+
+        /* Action Buttons */
+        .action-buttons { display: flex; padding: 15px; border-top: 1px solid #ccc; flex-wrap: wrap; border-bottom: 1px solid #ccc; gap: 5px;}
+        .btn { padding: 8px 12px; border: 1px solid transparent; cursor: pointer; font-weight: bold; font-size: 13px; flex-grow: 1; text-align: center;}
+        .btn-save-next { background-color: #5cb85c; color: white; }
+        .btn-clear { background-color: white; color: black; border: 1px solid #ccc; }
+        .btn-save-mark { background-color: #f0ad4e; color: white; }
+        .btn-mark-next { background-color: #337ab7; color: white; }
+
+        /* Bottom Nav */
+        .bottom-nav { display: flex; justify-content: space-between; padding: 10px 15px; background-color: #f5f5f5; gap: 10px; }
+        .btn-nav { padding: 10px 15px; background-color: white; border: 1px solid #ccc; cursor: pointer; font-weight: bold; color: #555; flex-grow: 1;}
+        .btn-submit { background-color: #5cb85c; color: white; border: none; }
+
+        /* Right Panel (Palette) */
+        .palette-header { padding: 10px; background: white; display:flex; flex-direction:column; align-items:center; border-bottom: 1px solid #ccc;}
+        .palette-header img { width: 100%; max-width: 180px; margin-bottom:10px; }
+        
+        .legend-box { margin: 10px; padding: 10px; border: 2px dotted #aaa; background: white; }
+        .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        
+        .badge { width: 35px; height: 30px; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; font-size: 14px; min-width: 35px;}
+        .b-unvisited { background-color: #e0e0e0; color: #333; border: 1px solid #ccc; border-radius: 3px; }
+        .b-unanswered { background-color: #d24d26; clip-path: polygon(15% 0%, 100% 0%, 85% 100%, 0% 100%); }
+        .b-answered { background-color: #5cb85c; border-radius: 3px; clip-path: polygon(0 0, 100% 0, 100% 75%, 75% 100%, 0 100%);}
+        .b-review { background-color: #551a8b; border-radius: 50%; width: 32px; height: 32px; }
+        
+        .question-grid-container { padding: 10px; flex-grow: 1; background: #e9ecef; }
+        .question-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+        .q-btn { width: 100%; padding: 8px 0; background-color: #f4f4f4; border: 1px solid #aaa; text-align: center; cursor: pointer; border-radius: 3px; font-size: 14px; color: #333;}
+        
+        .q-btn.active { border: 2px solid #000; box-shadow: inset 0 0 5px rgba(0,0,0,0.2); }
+        .q-btn.unanswered { background-color: #d24d26; color: white; border: none; clip-path: polygon(15% 0%, 100% 0%, 85% 100%, 0% 100%); }
+        .q-btn.answered { background-color: #5cb85c; color: white; border: none; clip-path: polygon(0 0, 100% 0, 100% 75%, 75% 100%, 0 100%); }
+        .q-btn.review { background-color: #551a8b; color: white; border: none; border-radius: 50%; height: 35px; width: 35px; margin: 0 auto; display:flex; justify-content:center; align-items:center; }
+
+        /* MOBILE FIXES */
+        @media (max-width: 768px) {
+            body { height: auto; min-height: 100vh; overflow-y: auto; }
+            #test-screen { flex-direction: column; height: auto; }
+            .left-panel { width: 100%; border-right: none; height: auto; min-height: 80vh; }
+            .right-panel { width: 100%; border-left: none; border-top: 3px solid #333; height: auto; }
+            .question-area { overflow-y: visible; }
+            .action-buttons { justify-content: space-between; }
+            .bottom-nav { flex-wrap: wrap; }
+            .btn-nav { font-size: 12px; padding: 10px 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h2 style="margin-top:0;">Raw NEET Paper Parser</h2>
+        <p>Paste the raw text directly from the PDF. It will look for the question number (e.g., 27.), the options marked as (1), (2), (3), (4), and the Key: (X).</p>
+        <textarea id="bulk-input">27. The amount of work done to raise a mass 
+'m' from the surface of the Earth to a height 
+equal to the radius of the Earth 'R', will be:
+(1) 2 mg R (2) mg R
+(3)
+R
+4
+mg
+(4)
+R
+2
+mg
+Key: (4)
+
+28. An electric heater supplies heat to a system 
+at a rate of 100 W. If the system performs 
+work a rate of 75 J/s, then the rate at which 
+internal energy increases will be:
+(1) 125 W (2) 100 W
+(3) 25 W (4) 75 W
+Key: (3)</textarea>
+        <button class="start-btn" onclick="parseNeetFormat()">START MOCK TEST</button>
+    </div>
+
+    <div id="test-screen">
+        <div class="left-panel">
+            <div class="header-top">
+                <div class="candidate-info">
+                    <div class="profile-pic"></div>
+                    <div class="info-text">
+                        <p>Candidate Name : <b style="color:#f0ad4e;">[Your Name]</b></p>
+                        <p>Exam Name : <b>NEET MOCK TEST</b></p>
+                    </div>
+                </div>
+                <div class="timer-container">
+                    Remaining Time : <br>
+                    <span class="timer-bubble" id="timer">03:00:00</span>
+                </div>
+            </div>
+
+            <div class="question-area">
+                <div class="question-header">
+                    <h2 id="q-number-display">Question 1:</h2>
+                    <div class="arrow-down">&darr;</div>
+                </div>
+                <div class="question-text" id="q-text-display">Loading...</div>
+                <div class="options-grid" id="options-display"></div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-save-next" onclick="saveAndNext()">SAVE & NEXT</button>
+                <button class="btn btn-clear" onclick="clearSelection()">CLEAR</button>
+                <button class="btn btn-save-mark" onclick="saveAndMark()">SAVE & MARK</button>
+                <button class="btn btn-mark-next" onclick="markForReview()">MARK & NEXT</button>
+            </div>
+
+            <div class="bottom-nav">
+                <button class="btn-nav" onclick="prevQuestion()"><< BACK</button>
+                <button class="btn-nav" onclick="nextQuestion()">NEXT >></button>
+                <button class="btn-nav btn-submit" onclick="submitTest()">SUBMIT</button>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="palette-header">
+                <div style="font-weight:bold; font-size:18px; color:#333; margin:10px 0;">National Testing Agency</div>
+                <div style="background:#551a8b; color:white; padding:5px; width:100%; text-align:center; font-size:14px;">English &nbsp; ▼</div>
+            </div>
+            
+            <div class="legend-box">
+                <div class="legend-grid">
+                    <div class="legend-item"><div class="badge b-unvisited" id="count-unvisited">0</div> Not Visited</div>
+                    <div class="legend-item"><div class="badge b-unanswered" id="count-unanswered">0</div> Not Answered</div>
+                    <div class="legend-item"><div class="badge b-answered" id="count-answered">0</div> Answered</div>
+                    <div class="legend-item"><div class="badge b-review" id="count-review">0</div> Marked for Review</div>
+                </div>
+            </div>
+
+            <div class="question-grid-container">
+                <div class="question-grid" id="question-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h2 style="color:#5cb85c;">Exam Submitted Successfully</h2>
+        <div id="score-report"></div>
+        <button class="restart-btn" onclick="location.reload()" style="margin-top: 30px;">Take Another Test</button>
+    </div>
+
+    <script>
+        let questions = [];
+        let userAnswers = {}; 
+        let questionStatus = {}; 
+        let currentIndex = 0;
+        let timerInterval;
+
+        // --- NEET PARSER ENGINE ---
+        function parseNeetFormat() {
+            let text = document.getElementById("bulk-input").value;
+            questions = [];
+
+            let blockRegex = /\d+\.\s([\s\S]*?)Key:\s*\((\d+)\)/g;
+            let match;
+
+            while ((match = blockRegex.exec(text)) !== null) {
+                let content = match[1]; 
+                let correctIndex = parseInt(match[2]) - 1; 
+
+                let structureRegex = /([\s\S]*?)\(1\)([\s\S]*?)\(2\)([\s\S]*?)\(3\)([\s\S]*?)\(4\)([\s\S]*)/;
+                let parsedOpts = content.match(structureRegex);
+
+                if (parsedOpts) {
+                    questions.push({
+                        question: parsedOpts[1].trim(),
+                        options: [
+                            parsedOpts[2].trim(), 
+                            parsedOpts[3].trim(), 
+                            parsedOpts[4].trim(), 
+                            parsedOpts[5].trim()  
+                        ],
+                        correctIndex: correctIndex
+                    });
+                }
+            }
+
+            if(questions.length === 0) return alert("Could not parse. Ensure format has a question number, (1), (2), (3), (4) for options, and Key: (x) at the end.");
+
+            for(let i=0; i<questions.length; i++) {
+                questionStatus[i] = 'unvisited';
+                userAnswers[i] = null;
+            }
+
+            document.getElementById("setup-screen").style.display = "none";
+            document.getElementById("test-screen").style.display = "flex";
+            
+            generatePalette();
+            loadQuestion(0);
+            startTimer(10800); 
+            updateLegend();
+        }
+
+        // --- STANDARD MOCK TEST LOGIC ---
+        function startTimer(duration) {
+            let timer = duration, hours, minutes, seconds;
+            timerInterval = setInterval(function () {
+                hours = parseInt(timer / 3600, 10);
+                minutes = parseInt((timer % 3600) / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+                document.getElementById('timer').textContent = 
+                    (hours < 10 ? "0" + hours : hours) + ":" + 
+                    (minutes < 10 ? "0" + minutes : minutes) + ":" + 
+                    (seconds < 10 ? "0" + seconds : seconds);
+                if (--timer < 0) { submitTest(); }
+            }, 1000);
+        }
+
+        function generatePalette() {
+            const grid = document.getElementById("question-grid");
+            grid.innerHTML = "";
+            for (let i = 0; i < questions.length; i++) {
+                let btn = document.createElement("div");
+                btn.className = "q-btn b-unvisited";
+                btn.id = "p-btn-" + i;
+                btn.innerText = (i + 1 < 10 ? "0" : "") + (i + 1);
+                btn.onclick = () => loadQuestion(i);
+                grid.appendChild(btn);
+            }
+        }
+
+        function loadQuestion(index) {
+            if(questionStatus[currentIndex] === 'unvisited') questionStatus[currentIndex] = 'unanswered';
+            currentIndex = index;
+            
+            document.getElementById("q-number-display").innerText = "Question " + (index + 1) + ":";
+            document.getElementById("q-text-display").innerText = questions[index].question;
+
+            const optionsDiv = document.getElementById("options-display");
+            optionsDiv.innerHTML = "";
+            questions[index].options.forEach((optText, optIndex) => {
+                let isChecked = userAnswers[index] === optIndex ? "checked" : "";
+                optionsDiv.innerHTML += `
+                    <label class="option-item">
+                        <input type="radio" name="currentQ" value="${optIndex}" ${isChecked}> 
+                        <span class="option-text"><b>(${optIndex + 1})</b> ${optText}</span>
+                    </label>`;
+            });
+
+            updatePaletteColors();
+            updateLegend();
+            
+            if(window.innerWidth <= 768) {
+                window.scrollTo(0, 0);
+            }
+        }
+
+        function getSelectedOption() {
+            let selected = document.querySelector('input[name="currentQ"]:checked');
+            return selected ? parseInt(selected.value) : null;
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('input[name="currentQ"]').forEach(r => r.checked = false);
+            userAnswers[currentIndex] = null;
+            questionStatus[currentIndex] = 'unanswered';
+            updatePaletteColors(); updateLegend();
+        }
+
+        function saveAndNext() {
+            let selected = getSelectedOption();
+            if (selected !== null) { userAnswers[currentIndex] = selected; questionStatus[currentIndex] = 'answered'; } 
+            else { questionStatus[currentIndex] = 'unanswered'; }
+            nextQuestion();
+        }
+
+        function saveAndMark() {
+            let selected = getSelectedOption();
+            if (selected !== null) { userAnswers[currentIndex] = selected; }
+            questionStatus[currentIndex] = 'review';
+            nextQuestion();
+        }
+
+        function markForReview() {
+            let selected = getSelectedOption();
+            if (selected !== null) userAnswers[currentIndex] = selected;
+            questionStatus[currentIndex] = 'review';
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if (currentIndex < questions.length - 1) loadQuestion(currentIndex + 1);
+            else { updatePaletteColors(); updateLegend(); }
+        }
+
+        function prevQuestion() {
+            if (currentIndex > 0) loadQuestion(currentIndex - 1);
+        }
+
+        function updatePaletteColors() {
+            for (let i = 0; i < questions.length; i++) {
+                let btn = document.getElementById("p-btn-" + i);
+                btn.className = "q-btn";
+                if(questionStatus[i] === 'unanswered') btn.classList.add('unanswered');
+                else if(questionStatus[i] === 'answered') btn.classList.add('answered');
+                else if(questionStatus[i] === 'review') btn.classList.add('review');
+                else btn.classList.add('b-unvisited');
+                if (i === currentIndex) btn.classList.add("active");
+            }
+        }
+
+        function updateLegend() {
+            let counts = { unvisited: 0, unanswered: 0, answered: 0, review: 0 };
+            for(let key in questionStatus) counts[questionStatus[key]]++;
+            const formatNum = (num) => num < 10 ? "0" + num : num;
+            document.getElementById("count-unvisited").innerText = formatNum(counts.unvisited);
+            document.getElementById("count-unanswered").innerText = formatNum(counts.unanswered);
+            document.getElementById("count-answered").innerText = formatNum(counts.answered);
+            document.getElementById("count-review").innerText = formatNum(counts.review);
+        }
+
+        function submitTest() {
+            clearInterval(timerInterval);
+            document.getElementById("test-screen").style.display = "none";
+            document.getElementById("result-screen").style.display = "block";
+            window.scrollTo(0, 0);
+
+            let correct = 0, wrong = 0, unattempted = 0;
+            for(let i=0; i<questions.length; i++) {
+                if (userAnswers[i] === null) unattempted++;
+                else if (userAnswers[i] === questions[i].correctIndex) correct++;
+                else wrong++;
+            }
+
+            document.getElementById("score-report").innerHTML = `
+                <div style="font-size: 18px; text-align:left; max-width: 400px; margin: 0 auto; line-height: 2;">
+                    <p>Total Questions: <b>${questions.length}</b></p>
+                    <p style="color:green;">Correct (+4): <b>${correct}</b></p>
+                    <p style="color:red;">Incorrect (-1): <b>${wrong}</b></p>
+                    <p style="color:gray;">Unattempted: <b>${unattempted}</b></p>
+                    <hr>
+                    <h3 style="background:#e9ecef; padding:15px; text-align:center;">Final Score: ${(correct * 4) - wrong}</h3>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
